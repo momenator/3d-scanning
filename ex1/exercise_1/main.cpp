@@ -45,13 +45,26 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 	outFile << nVertices << " " << nFaces << " 0" << endl;
 
 	// TODO: save vertices
+	vector<Vector4f> savedPositions;
+	bool zeroPointExists = false;
+
 	for (int i = 0; i < nVertices; i++) {
 		Vector4f pos = (*(vertices + i)).position;
 		Vector4uc col = (*(vertices + i)).color;
 		outFile << pos(0) << " " << pos(1) << " " << pos(2) << " " << int(col(0)) << " " << int(col(1)) << " " << int(col(2)) << " " << int(col(3)) << endl;
+		// save one zero point and multiple non-zero points in an array
+		if (pos(0) == 0 && pos(1) == 0 && pos(2) == 0 && !zeroPointExists) {
+			zeroPointExists = true;
+			savedPositions.push_back(pos);
+		} else if (pos(0) != 0 || pos(1) != 0 || pos(2) != 0) {
+			savedPositions.push_back(pos);
+		}
+		cout << savedPositions[0] << "\n";
 	}
 
 	// TODO: save valid faces
+	// How to determine the valid faces?
+
 
 
 	// close file
