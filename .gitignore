@@ -1,0 +1,8 @@
+**/.DS_Store
+**/.vscode/
+**/libs/
+**/*.pdf
+**/build/
+**/data/
+**/mesh/
+**/*.zip
