@@ -35,69 +35,35 @@ bool areEdgesValid(Vector4f posA, Vector4f posB, Vector4f posC, float threshold)
 	bool norm1Valid = norm1 > 0 && norm1 < threshold;
 
 	// check B -> C
-	float norm2 = (pos3C - pos3A).norm();
+	float norm2 = (pos3C - pos3B).norm();
 	bool norm2Valid = norm2 > 0 && norm2 < threshold;
 
 	// check C -> A
-	float norm3 = (pos3B - pos3C).norm();
+	float norm3 = (pos3A - pos3C).norm();
 	bool norm3Valid = norm3 > 0 && norm3 < threshold;
 
-	cout << "POS:: " << pos3A << " " << pos3B << " " << pos3C << endl;
-	cout << "NORM:: " << norm1Valid << " " << norm2Valid << " " << norm3Valid << endl;
+	// if (norm1Valid || norm2Valid || norm3Valid) {
+	// 	cout << "NORM VALID " << endl;
+	// 	cout << "POS:: " << pos3A << " " << pos3B << " " << pos3C << endl;
+	// 	cout << "NORM:: " << norm1 << " " << norm2 << " " << norm3 << endl;
+	// }
 
 	return norm1Valid && norm2Valid && norm3Valid;
 }
 
-int getNumValidFaces(Vertex* vertices, unsigned int height, unsigned int width, float threshold)
+int getNumValidFaces(unsigned int height, unsigned int width)
 {
-	int numValidFaces = 0;
-	for (int i = 0; i < height - 1; i++) {
-		// there are 2 triangles in every 'square', given 4 points tl, tr, bl, br
-		// tl = i * height, bl = i * height + width, tr = i * height + 1, br = i * height + width + 1
-		// this ordering ensures that the orientaton is anti-clockwise
-		// [tl, bl, tr] - top
-		// [bl, br, tr] - bottom
+	return 2 * (height - 1) * (width - 1);
+}
 
-		int tl = i * height;
-		int bl = i * height + width;
-		int tr = i * height + 1;
-		int br = i * height + width + 1;
-
-		Vector4f tlPos = vertices[tl].position;
-		Vector4f blPos = vertices[bl].position;
-		Vector4f trPos = vertices[tr].position;
-		Vector4f brPos = vertices[br].position;
-
-		// check if faces are valid, how?
-		// leave it out if any of the points if MINF
-		// then check if the each edge is less than threshold
-		
-		// TODO: save valid faces
-		// check top triangle
-		// cout << ">>>><<<<" << endl;
-		// cout << tl << " " << bl << " " << tr << " " << br << endl;
-		// cout << tlPos << " " << blPos << " " << trPos << " " << brPos << endl;
-		// cout << hasInfPosition(tlPos, blPos, trPos) << " " << hasEdgeLengthLessThanThreshold(tlPos, blPos, trPos, threshold) << " " << hasEdgeLengthLessThanThreshold(blPos, brPos, trPos, threshold) << endl;
-
-		if (!hasInfPosition(tlPos, blPos, trPos)) {
-			if (areEdgesValid(tlPos, blPos, trPos, threshold)) {
-				numValidFaces += 1;
-			}
-		}
-
-		// check bottom triangle
-		if (!hasInfPosition(blPos, brPos, trPos)) {
-			if (areEdgesValid(blPos, brPos, trPos, threshold)) {
-				numValidFaces += 1;
-			}
-		}
-	}
-	return numValidFaces;
+int getNumEdges(unsigned int height, unsigned int width)
+{
+	return ((height - 1) * (width)) + ((width - 1) * (height)) + ((height - 1) * (width - 1));
 }
 
 bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const std::string& filename)
 {
-	float edgeThreshold = 0.01f; // 1cm
+	float edgeThreshold = 0.5f; // now is 50cm. 1cm - original 0.01f
 
 	// TODO 2: use the OFF file format to save the vertices grid (http://www.geomview.org/docs/html/OFF.html)
 	// - have a look at the "off_sample.off" file to see how to store the vertices and triangles
@@ -111,7 +77,10 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 	unsigned int nVertices = height * width;
 
 	// TODO: Determine number of valid faces
-	unsigned nFaces = getNumValidFaces(vertices, height, width, edgeThreshold);
+	unsigned int nFaces = getNumValidFaces(height, width);
+
+	unsigned int nEdges = getNumEdges(height, width);
+
 
 	// Write off file
 	std::ofstream outFile(filename);
@@ -119,7 +88,7 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 
 	// write header
 	outFile << "COFF" << std::endl;
-	outFile << nVertices << " " << nFaces << " " << nFaces * 3 << endl;
+	outFile << nVertices << " " << nFaces << " " << nEdges << endl;
 
 	// TODO: save vertices
 	for (int i = 0; i < nVertices; i++) {
@@ -236,13 +205,16 @@ int main()
 					vertices[idx].color = Vector4uc(0,0,0,0);
 				} else {
 					// apply backprojection
-					// pixel to camera space (task 1a)
+					// pixel to camera coordinates to camera space (task 1a)
 					float Xc = (u - cX) * Zc / fX;
 					float Yc = (v - cY) * Zc / fY;
-					Vector4f Xcamera = Vector4f(Xc, Yc, Zc, 1.0);
+
+					// (task 1b optional)
+					Vector4f Xcamera = depthExtrinsicsInv * Vector4f(Xc, Yc, Zc, 1.0);
 
 					// camera to world space (task 1b)
 					Vector4f Xworld = trajectoryInv * Xcamera;
+					
 					// cout << " xworld " << Xworld << endl;
 					Vector4uc RGBA = Vector4uc(*(colorMap + u + v + 0), *(colorMap + u + v + 1), *(colorMap + u + v + 2), *(colorMap + u + v + 3));
 					vertices[idx].position = Xworld;
