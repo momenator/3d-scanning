@@ -21,26 +21,30 @@ struct Vertex
 bool hasInfPosition(Vector4f posA, Vector4f posB, Vector4f posC)
 {
 	// only need to check X, if X is MINF, the rest is invalid or also MINF
-	return posA(0) == MINF || posB(0) == MINF || posC(0) == MINF;
+	return posA.x() == MINF || posA.y() == MINF || posA.z() == MINF || posB.x() == MINF || posB.y() == MINF || posB.z() == MINF || posC.x() == MINF || posC.y() == MINF || posC.z() == MINF;
+}
+
+float getNorm(Vector4f a, Vector4f b) {
+	return sqrtf(pow(a.x() - b.x(), 2) + pow(a.y() - b.y(), 2) + pow(a.z() - b.z(), 2));
 }
 
 bool areEdgesValid(Vector4f posA, Vector4f posB, Vector4f posC, float threshold)
 {
-	Vector3f pos3A = Vector3f(posA(0), posA(1), posA(2));
-	Vector3f pos3B = Vector3f(posB(0), posB(1), posB(2));
-	Vector3f pos3C = Vector3f(posC(0), posC(1), posC(2));
+	Vector3f pos3A = Vector3f(posA.x(), posA.y(), posA.z());
+	Vector3f pos3B = Vector3f(posB.x(), posB.y(), posB.z());
+	Vector3f pos3C = Vector3f(posC.x(), posC.y(), posC.z());
 
 	// check A -> B
-	float norm1 = (pos3B - pos3A).norm();
-	bool norm1Valid = norm1 > 0 && norm1 < threshold;
+	float norm1 = getNorm(posA, posB);
+	bool norm1Valid = norm1 < threshold;
 
 	// check B -> C
-	float norm2 = (pos3C - pos3B).norm();
-	bool norm2Valid = norm2 > 0 && norm2 < threshold;
+	float norm2 = getNorm(posB, posC);
+	bool norm2Valid = norm2 < threshold;
 
 	// check C -> A
-	float norm3 = (pos3A - pos3C).norm();
-	bool norm3Valid = norm3 > 0 && norm3 < threshold;
+	float norm3 = getNorm(posC, posA);
+	bool norm3Valid = norm3 < threshold;
 
 	// if (norm1Valid || norm2Valid || norm3Valid) {
 	// 	cout << "NORM VALID " << endl;
@@ -53,7 +57,7 @@ bool areEdgesValid(Vector4f posA, Vector4f posB, Vector4f posC, float threshold)
 
 int getNumValidFaces(unsigned int height, unsigned int width)
 {
-	return 2 * (height - 1) * (width - 1);
+	return (height - 1) * (width - 1) / 2;
 }
 
 int getNumEdges(unsigned int height, unsigned int width)
@@ -63,7 +67,7 @@ int getNumEdges(unsigned int height, unsigned int width)
 
 bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const std::string& filename)
 {
-	float edgeThreshold = 0.5f; // now is 50cm. 1cm - original 0.01f
+	float edgeThreshold = 0.01f; // 1cm
 
 	// TODO 2: use the OFF file format to save the vertices grid (http://www.geomview.org/docs/html/OFF.html)
 	// - have a look at the "off_sample.off" file to see how to store the vertices and triangles
@@ -88,32 +92,32 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 
 	// write header
 	outFile << "COFF" << std::endl;
-	outFile << nVertices << " " << nFaces << " " << nEdges << endl;
+	outFile << nVertices << " " << nFaces << " 0" << std::endl;
 
 	// TODO: save vertices
 	for (int i = 0; i < nVertices; i++) {
-		Vector4f pos = (*(vertices + i)).position;
-		Vector4uc col = (*(vertices + i)).color;
+		Vector4f pos = vertices[i].position;
+		Vector4uc col = vertices[i].color;
 		if (pos(0) == MINF) {
-			outFile << "0 0 0 0 0 0 0" << endl;
+			outFile << "0 0 0 0 0 0 0" << std::endl;
  		} else {
-			outFile << pos(0) << " " << pos(1) << " " << pos(2) << " " << int(col(0)) << " " << int(col(1)) << " " << int(col(2)) << " " << int(col(3)) << endl;
+			outFile << pos.x() << " " << pos.y() << " " << pos.z() << " " << int(col.x()) << " " << int(col.y()) << " " << int(col.z()) << " " << 255 << std::endl;
 		}
 	}
 	
 	outFile << "# list of faces" << endl;
-
+	int numValidFaces = 0;
 	// triangulate - get all triplets
-	for (int i = 0; i < height - 1; i++) {
-		for (int j = 0; j < width - 1; j++) {
+	for (int v = 0; v < height - 1; v++) {
+		for (int u = 0; u < width - 1; u++) {
 			// there are 2 triangles in every 'square', given 4 points tl, tr, bl, br
 			// tl = i * height, bl = i * height + width, tr = i * height + 1, br = i * height + width + 1
 			// this ordering ensures that the orientaton is anti-clockwise
 			// [tl, bl, tr] - top
 			// [bl, br, tr] - bottom
 
-			int tl = (i * height) + j;
-			int bl = (i * height) + width + j;
+			int tl = (v * width) + u;
+			int bl = ((v + 1) * width) + u;
 			int tr = tl + 1;
 			int br = bl + 1;
 
@@ -128,13 +132,20 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 			
 			// TODO: save valid faces
 			// check top triangle
-			if (!hasInfPosition(tlPos, blPos, trPos) && areEdgesValid(tlPos, blPos, trPos, edgeThreshold)) {
-				outFile << "3 " << tl << " " << bl << " " << tr << endl;
+			// cout << tl << " " << bl << " " << tr << endl;
+			if (!hasInfPosition(tlPos, blPos, trPos)) {
+				if (areEdgesValid(tlPos, blPos, trPos, edgeThreshold)) {
+					outFile << "3 " << tl << " " << bl << " " << tr << "\n";
+					numValidFaces+=1;
+				}
 			}
 
 			// check bottom triangle
-			if (!hasInfPosition(blPos, brPos, trPos) && areEdgesValid(blPos, brPos, trPos, edgeThreshold)) {
-				outFile << "3 " << bl << " " << br << " " << tr << endl;
+			if (!hasInfPosition(blPos, brPos, trPos)) {
+				if (areEdgesValid(blPos, brPos, trPos, edgeThreshold)){
+					outFile << "3 " << bl << " " << br << " " << tr << "\n";
+					numValidFaces+=1;
+				}
 			}
 		}
 	}
@@ -198,7 +209,7 @@ int main()
 
 		for (int v = 0; v < height; v++) {
 			for (int u = 0; u < width; u++) {
-				int idx = (v * height) + u;
+				int idx = (v * width) + u;
 				float Zc = depthMap[idx];
 				if (Zc == MINF) {
 					vertices[idx].position = Vector4f(MINF, MINF, MINF, MINF);;
@@ -206,17 +217,23 @@ int main()
 				} else {
 					// apply backprojection
 					// pixel to camera coordinates to camera space (task 1a)
-					float Xc = (u - cX) * Zc / fX;
-					float Yc = (v - cY) * Zc / fY;
+					float Xc = ((float)(u) - cX) * Zc / fX;
+					float Yc = ((float)(v) - cY) * Zc / fY;
 
 					// (task 1b optional)
-					Vector4f Xcamera = depthExtrinsicsInv * Vector4f(Xc, Yc, Zc, 1.0);
+					Vector4f Xcamera = Vector4f(Xc, Yc, Zc, 1.0);
 
 					// camera to world space (task 1b)
 					Vector4f Xworld = trajectoryInv * Xcamera;
 					
 					// cout << " xworld " << Xworld << endl;
-					Vector4uc RGBA = Vector4uc(*(colorMap + u + v + 0), *(colorMap + u + v + 1), *(colorMap + u + v + 2), *(colorMap + u + v + 3));
+					Vector4uc RGBA = Vector4uc(
+						(unsigned char)(colorMap[idx * 4]), 
+						(unsigned char)(colorMap[idx * 4 + 1]), 
+						(unsigned char)(colorMap[idx * 4 + 2]), 
+						(unsigned char)(colorMap[idx * 4 + 3])
+					);
+
 					vertices[idx].position = Xworld;
 					vertices[idx].color = RGBA;
 				}
