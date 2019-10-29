@@ -28,29 +28,20 @@ float getNorm(Vector4f a, Vector4f b) {
 	return sqrtf(pow(a.x() - b.x(), 2) + pow(a.y() - b.y(), 2) + pow(a.z() - b.z(), 2));
 }
 
-bool areEdgesValid(Vector4f posA, Vector4f posB, Vector4f posC, float threshold)
+bool areEdgesValid(Vector4f a, Vector4f b, Vector4f c, float threshold)
 {
-	Vector3f pos3A = Vector3f(posA.x(), posA.y(), posA.z());
-	Vector3f pos3B = Vector3f(posB.x(), posB.y(), posB.z());
-	Vector3f pos3C = Vector3f(posC.x(), posC.y(), posC.z());
 
 	// check A -> B
-	float norm1 = getNorm(posA, posB);
+	float norm1 = getNorm(a, b);
 	bool norm1Valid = norm1 < threshold;
 
 	// check B -> C
-	float norm2 = getNorm(posB, posC);
+	float norm2 = getNorm(b, c);
 	bool norm2Valid = norm2 < threshold;
 
 	// check C -> A
-	float norm3 = getNorm(posC, posA);
+	float norm3 = getNorm(c, a);
 	bool norm3Valid = norm3 < threshold;
-
-	// if (norm1Valid || norm2Valid || norm3Valid) {
-	// 	cout << "NORM VALID " << endl;
-	// 	cout << "POS:: " << pos3A << " " << pos3B << " " << pos3C << endl;
-	// 	cout << "NORM:: " << norm1 << " " << norm2 << " " << norm3 << endl;
-	// }
 
 	return norm1Valid && norm2Valid && norm3Valid;
 }
@@ -69,7 +60,7 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 {
 	float edgeThreshold = 0.01f; // 1cm
 
-	// TODO 2: use the OFF file format to save the vertices grid (http://www.geomview.org/docs/html/OFF.html)
+	// 2: use the OFF file format to save the vertices grid (http://www.geomview.org/docs/html/OFF.html)
 	// - have a look at the "off_sample.off" file to see how to store the vertices and triangles
 	// - for debugging we recommend to first only write out the vertices (set the number of faces to zero)
 	// - for simplicity write every vertex to file, even if it is not valid (position.x() == MINF) (note that all vertices in the off file have to be valid, thus, if a point is not valid write out a dummy point like (0,0,0))
@@ -77,10 +68,10 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 	// - you can use an arbitrary triangulation of the cells, but make sure that the triangles are consistently oriented
 	// - only write triangles with valid vertices and an edge length smaller then edgeThreshold
 
-	// TODO: Get number of vertices
+	// Get number of vertices
 	unsigned int nVertices = height * width;
 
-	// TODO: Determine number of valid faces
+	// Determine number of valid faces
 	unsigned int nFaces = getNumValidFaces(height, width);
 
 	unsigned int nEdges = getNumEdges(height, width);
@@ -94,7 +85,7 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 	outFile << "COFF" << std::endl;
 	outFile << nVertices << " " << nFaces << " 0" << std::endl;
 
-	// TODO: save vertices
+	// save vertices
 	for (int i = 0; i < nVertices; i++) {
 		Vector4f pos = vertices[i].position;
 		Vector4uc col = vertices[i].color;
@@ -130,7 +121,7 @@ bool WriteMesh(Vertex* vertices, unsigned int width, unsigned int height, const 
 			// leave it out if any of the points if MINF
 			// then check if the each edge is less than threshold
 			
-			// TODO: save valid faces
+			// save valid faces
 			// check top triangle
 			// cout << tl << " " << bl << " " << tr << endl;
 			if (!hasInfPosition(tlPos, blPos, trPos)) {
@@ -196,7 +187,7 @@ int main()
 		Matrix4f trajectory = sensor.GetTrajectory();
 		Matrix4f trajectoryInv = sensor.GetTrajectory().inverse();
 
-		// TODO 1: back-projection
+		// 1: back-projection
 		// write result to the vertices array below, keep pixel ordering!
 		// if the depth value at idx is invalid (MINF) write the following values to the vertices array
 		// vertices[idx].position = Vector4f(MINF, MINF, MINF, MINF);
@@ -221,7 +212,7 @@ int main()
 					float Yc = ((float)(v) - cY) * Zc / fY;
 
 					// (task 1b optional)
-					Vector4f Xcamera = Vector4f(Xc, Yc, Zc, 1.0);
+					Vector4f Xcamera = depthExtrinsicsInv * Vector4f(Xc, Yc, Zc, 1.0);
 
 					// camera to world space (task 1b)
 					Vector4f Xworld = trajectoryInv * Xcamera;
