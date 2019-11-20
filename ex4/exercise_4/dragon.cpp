@@ -18,8 +18,14 @@ struct RegistrationCostFunction
 	{
 		// Implement the cost function
 		// Apply the transformation formula
-		residual[0] = T(w.w) * T(pow(T(sqrt(T(pow(T(cos(theta[0]) * T(p1.x) - sin(theta[0]) * T(p1.y)) + T(tx[0]) - T(p2.x), 2)) + T(pow(T(sin(theta[0]) * T(p1.x) + cos(theta[0]) * T(p1.y)) + T(ty[0]) - T(p2.y), 2)))), 2));
-		std::cout << w.w << " " << p1.x << " " << p2.x << std::endl;
+		// Soluton 1 - 1 component
+		auto comp = T(pow(T(cos(theta[0]) * T(p1.x) - sin(theta[0]) * T(p1.y)) + T(tx[0]) - T(p2.x), 2));
+		comp += T(pow(T(sin(theta[0]) * T(p1.x) + cos(theta[0]) * T(p1.y)) + T(ty[0]) - T(p2.y), 2));
+		residual[0] = T(w.w) * T(pow(T(sqrt(comp)), 2));
+		
+		// Solution 2 - 2 components
+		// residual[0] = abs(cos(theta[0]) * T(p1.x) - sin(theta[0]) * T(p1.y) + T(tx[0]) - T(p2.x));
+		// residual[1] = abs(sin(theta[0]) * T(p1.x) + cos(theta[0]) * T(p1.y) + T(ty[0]) - T(p2.y));
 		return true;
 	}
 

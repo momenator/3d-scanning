@@ -17,7 +17,9 @@ struct GaussianCostFunction
 	{
 		// Implement the cost function
 		// Apply the gaussian formula
-		residual[0] = T(point.y) - T(exp(-((T(point.x) - T(mu[0]))*(T(point.x) - T(mu[0])))/(T(2)*T(sigma[0])*T(sigma[0])))) / T(sqrt(T(2) * T(M_PI) * T(sigma[0] * sigma[0])));
+		auto expTerm = T(exp(-((T(point.x) - T(mu[0]))*(T(point.x) - T(mu[0])))/(T(2)*T(sigma[0])*T(sigma[0]))));
+		auto denominatorTerm = T(sqrt(T(2) * T(M_PI) * T(sigma[0] * sigma[0])));
+		residual[0] = T(point.y) - expTerm / denominatorTerm;
 		return true;
 	}
 
