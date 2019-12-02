@@ -1,0 +1,22 @@
+{
+  "files.associations": {
+    "__bit_reference": "cpp",
+    "__locale": "cpp",
+    "atomic": "cpp",
+    "bitset": "cpp",
+    "fstream": "cpp",
+    "ios": "cpp",
+    "iosfwd": "cpp",
+    "istream": "cpp",
+    "iterator": "cpp",
+    "locale": "cpp",
+    "memory": "cpp",
+    "mutex": "cpp",
+    "ostream": "cpp",
+    "streambuf": "cpp",
+    "string": "cpp",
+    "type_traits": "cpp",
+    "utility": "cpp",
+    "vector": "cpp"
+  }
+}
