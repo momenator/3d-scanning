@@ -521,9 +521,10 @@ private:
 		// Solve the system
 		VectorXf x(6);
  
-		JacobiSVD<MatrixXf> svd(A, ComputeThinU | ComputeThinV);
-
-		x = svd.solve(b);
+		// JacobiSVD<MatrixXf> svd(A, ComputeThinU | ComputeThinV);
+		// x = svd.solve(b);
+		
+		x = (A.transpose() * A).inverse() * A.transpose() * b;
 
 		float alpha = x(0), beta = x(1), gamma = x(2);
 
